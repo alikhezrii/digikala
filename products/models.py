@@ -1,3 +1,4 @@
+#from typing import Iterable, Optional
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -9,8 +10,12 @@ class Product(models.Model):
     description = models.TextField(verbose_name=_("Description"))   
     category = models.ForeignKey("Category",
                                verbose_name=_("Category"),
-                               on_delete=models.RESTRICT,
-                               )   
+                               on_delete=models.RESTRICT)
+    @property
+    def default_image(self):
+        return self.image_set.filter(is_default = True).first()
+              
+                                             
     def __str__(self):
         return f"{self.id} {self.name}"
     
@@ -51,7 +56,7 @@ class Comment(models.Model):
         verbose_name_plural = _("comments")
 
     def __str__(self):
-        return f'commnet on{self.product.name}'
+        return f'comment on{self.product.name}'
     
 
 class Image(models.Model):
@@ -59,10 +64,9 @@ class Image(models.Model):
     alt = models.CharField(verbose_name=_("Alternative Text"),max_length=100)
     product = models.ForeignKey("Product",
                                  verbose_name=_("Product"),
-                                on_delete=models.CASCADE,
-                                related_name=("Image"))    
+                                on_delete=models.CASCADE)    
     image = models.ImageField(verbose_name=_("Image"), upload_to='products',)
-    is_default = models,models.BooleanField(verbose_name=_("Is default image?"), default=False)
+    is_default = models.BooleanField(verbose_name=_("Is default image?"), default=False)
 
     class Meta:
         verbose_name = _("Image")
