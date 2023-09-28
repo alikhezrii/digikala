@@ -22,15 +22,12 @@ def product_list_view(request):
 
 
 
-def product_single_view(request, product_id):
-        p = get_object_or_404(Product, id = product_id)
-        # print(p)
-        # print(product_id)
-        print(p.default_image.image.url)
-        
-        context = {"product":p}
+def product_detail_view(request, pk):
+        p = get_object_or_404(Product, pk=pk)
+        seller_prices = p.seller_prices.all()
+        context = {"product": p, "seller_prices": seller_prices}
         return render(
-            template_name='products/product-single.html',
+            template_name='products/product-detail.html',
             request=request,
             context=context
         )

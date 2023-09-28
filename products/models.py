@@ -1,9 +1,16 @@
 #from typing import Iterable, Optional
 from django.db import models
 from django.utils.translation import gettext as _
+from django.urls import reverse
 
 # Create your models here.
 
+class Brand(models.Model):
+    name = models.CharField(verbose_name =_("Name"), max_length=150)
+    en_name = models.CharField(verbose_name = _("Name"), max_length=150)
+    slug = models.SlugField(verbose_name =_("slug"))
+
+    
 class Product(models.Model):
     name = models.CharField(verbose_name=_("Persian name"), max_length=200)
     en_name = models.CharField(verbose_name=_("English name"), max_length=200)
@@ -11,14 +18,30 @@ class Product(models.Model):
     category = models.ForeignKey("Category",
                                verbose_name=_("Category"),
                                on_delete=models.RESTRICT)
+    brand = models.ForeignKey("Brand", verbose_name=_("Brand"),
+                              on_delete=models.SET_NULL, null=True,blank=True)
+    sellers = models.ManyToManyField("sellers.Seller", verbose_name=_("Sellers"),
+                                    through='SellerProductPrice')
     @property
     def default_image(self):
         return self.image_set.filter(is_default = True).first()
-              
+
+    @property
+    def categories_list(self):
+        category_list = []
+        current_category = self.category
+        while current_category.parent is not None:
+            category_list.append(current_category)
+            current_category = current_category.parent
+        category_list.append(current_category)
+        return category_list
+
                                              
     def __str__(self):
         return f"{self.id} {self.name}"
     
+    def get_absolute_url(self):
+        return reverse("product_detail", kwargs={"pk": self.pk})
 
 class Category(models.Model):
     name = models.CharField(verbose_name=_("name"), max_length = 50)
@@ -68,6 +91,7 @@ class Image(models.Model):
     image = models.ImageField(verbose_name=_("Image"), upload_to='products',)
     is_default = models.BooleanField(verbose_name=_("Is default image?"), default=False)
 
+    
     class Meta:
         verbose_name = _("Image")
         verbose_name_plural = _("Images")
@@ -124,11 +148,15 @@ class ProductOption(models.Model):
         return f'{self.product.name} {self.name}'
 
     
-class ProductPrice(models.Model):
+class SellerProductPrice(models.Model):
     product = models.ForeignKey("Product",
                                  verbose_name=_("Product"),
+                                 related_name='seller_prices',
                                  on_delete=models.CASCADE
                                  )
+    seller = models.ForeignKey(
+        "sellers.Seller",verbose_name=_("Seller"),
+        on_delete=models.CASCADE)
     price = models.PositiveIntegerField(verbose_name=_("Price"))
     create_at = models.DateTimeField(
         verbose_name=_("create at"), auto_now=False, auto_now_add=True)
@@ -136,8 +164,8 @@ class ProductPrice(models.Model):
         verbose_name=_("create at"), auto_now=True,)
 
     class Meta:
-        verbose_name = _("ProductPrice")
-        verbose_name_plural = _("ProductPrices")
+        verbose_name = _("Seller Product Price")
+        verbose_name_plural = _("Seller Product Prices")
 
 
 
